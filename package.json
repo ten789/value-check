@@ -1,0 +1,13 @@
+{
+  "name": "vlue-check",
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": "tanzheng",
+  "main": "index.js",
+  "module": "dist/value-check.esm-bundler.js",
+  "types": "dist/value-check.d.ts",
+  "devDependencies": {
+    "rollup": "~2.40",
+    "typescript": "~4.2"
+  }
+}
