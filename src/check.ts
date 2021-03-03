@@ -21,6 +21,21 @@ export type CheckResultBase = Record<string, boolean>
 export type CheckResultObject = Record<string, Record<string, boolean>>
 export type CheckResult = CheckResultBase | CheckResultObject
 
+export const parseCheck = function (result: CheckResult): boolean {
+  for (const key of Object.keys(result)) {
+    if (typeof result[key] === 'object') {
+      if (!parseCheck(result[key] as CheckResult)) {
+        return false
+      }
+    } else {
+      if (!result[key]) {
+        return false
+      }
+    }
+  }
+  return true
+}
+
 export class Check {
   private static globalRules = new Map<string, CheckRule>()
   static setGlobalRules (rules: CheckRuleAlias): void {

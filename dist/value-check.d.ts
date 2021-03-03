@@ -76,6 +76,8 @@ export declare class CheckRules {
     static stringPregMatch(e: RegExp): string;
 }
 
+export declare const parseCheck: (result: CheckResult) => boolean;
+
 declare type TypeBase = string | number | null | [];
 
 declare type TypeObject = Record<string, TypeBase>;

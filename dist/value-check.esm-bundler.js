@@ -52,6 +52,21 @@ CheckRules.IS_ARRAY_LENGTH = `|#${CheckRules.OP_ARRAY}*len,$|`;
 // 占位 方便 index 快速非空判断
 CheckRules.buffedData = [null];
 
+const parseCheck = function (result) {
+    for (const key of Object.keys(result)) {
+        if (typeof result[key] === 'object') {
+            if (!parseCheck(result[key])) {
+                return false;
+            }
+        }
+        else {
+            if (!result[key]) {
+                return false;
+            }
+        }
+    }
+    return true;
+};
 class Check {
     constructor() {
         this.rules = new Map();
@@ -238,5 +253,5 @@ const extRules = {
 };
 Check.setGlobalRules(extRules);
 
-export { Check, CheckRules };
+export { Check, CheckRules, parseCheck };
 //# sourceMappingURL=value-check.esm-bundler.js.map
