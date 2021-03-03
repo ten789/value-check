@@ -1,38 +1,25 @@
 import { CheckRules } from './rules'
 
-type BaseType = string | number | null
+type TypeBase = string | number | null | []
+type TypeObject = Record<string, TypeBase>
 
+// 单行能表示的规则
 export type CheckRuleBase = string
-export interface CheckRuleExt {
-  [key: string]: CheckRuleBase
-}
-export type CheckRule = CheckRuleBase | CheckRuleExt
+// Object类型的规则
+export type CheckRuleObject = Record<string, CheckRuleBase>
+export type CheckRule = CheckRuleBase | CheckRuleObject
 
 export type CheckRuleAliasName = string
 export type CheckRuleAlias = Record<CheckRuleAliasName, CheckRule>
 
 export type CheckData = {
   rule: CheckRuleAliasName | CheckRule,
-  value: BaseType | Record<string, BaseType> | BaseType[]
+  value: TypeBase | TypeObject
 }
 
-type ScopedRule = {
-  [scope: string]: {
-    [name: string]: CheckRule
-  }
-}
-
-function genScopeTree (scope: string): string[] {
-  const tmp = scope.split('/')
-  tmp.unshift('')
-  const ret: string[] = []
-  while (tmp.length > 0) {
-    ret.push(tmp.join('/'))
-    ret.pop()
-  }
-  ret.reverse()
-  return ret
-}
+export type CheckResultBase = Record<string, boolean>
+export type CheckResultObject = Record<string, Record<string, boolean>>
+export type CheckResult = CheckResultBase | CheckResultObject
 
 export class Check {
   private static globalRules = new Map<string, CheckRule>()
@@ -42,77 +29,196 @@ export class Check {
     }
   }
 
-  protected rules: ScopedRule = { '': {} }
+  protected rules = new Map<string, CheckRule>()
 
   constructor () {
     Check.globalRules.forEach((rule, name) => {
-      this.rules[''][name] = rule
+      this.rules.set(name, rule)
     })
   }
 
-  setRule (scope: string, name: string, rule: CheckRule): void {
-    this.rules[scope][name] = rule
+  setRule (name: string, rule: CheckRule): void {
+    this.rules.set(name, rule)
   }
 
-  async check (scope: string, data: CheckData[]): Promise<number[]> {
-    const alias: CheckRuleAlias = {}
-    const ret: number[] = []
-    for (const name of genScopeTree(scope)) {
-      if (this.rules[name]) {
-        Object.keys(this.rules[name]).forEach(n => {
-          alias[n] = this.rules[name][n]
-        })
-      }
-    }
+  async check (data: CheckData[]): Promise<CheckResult> {
+    const ret: CheckResult = {}
+    let objectIndex = 0
     for (const item of data) {
-      ret.push(await Check.do(alias, item))
+      if (typeof item.value === 'string' ||
+        typeof item.value === 'number' ||
+        item.value === null ||
+        Array.isArray(item.value)
+      ) {
+        if (typeof item.rule === 'string') {
+          ret[item.rule] = await Check.process(item.rule, item.value)
+        } else {
+          throw new Error('Check: Rule and Value type error.')
+        }
+      } else {
+        if (typeof item.rule === 'object' &&
+          typeof item.value === 'object' &&
+          Object.keys(item.value) === Object.keys(item.rule)
+        ) {
+          const tmp: Record<string, boolean> = {}
+          for (const name of Object.keys(item.value)) {
+            tmp[name] = await Check.process(item.rule[name], item.value[name])
+          }
+          ret[objectIndex.toString()] = tmp
+          objectIndex++
+        }
+      }
     }
     return ret
   }
 
-  private static async do (
-    alias: CheckRuleAlias,
-    item: CheckData
-  ): Promise<number> {
-    if (typeof item.value === 'string' ||
-      typeof item.value === 'number' ||
-      item.value === null ||
-      Array.isArray(item.value)
-    ) {
-      if (typeof item.rule === 'string') {
-        return this.process(alias, item.rule, item.value as BaseType)
-      }
-    } else {
-      if (typeof item.rule === 'object' &&
-        Object.keys(item.value as Record<string, BaseType>) ===
-        Object.keys(item.rule)
-      ) {
-        for (const name of Object.keys(item.value)) {
-          const r = await this.process(alias, item.rule[name], item.value[name])
-          if (r > 0) {
-            return r
+  static async process (
+    rule: CheckRuleBase,
+    value: TypeBase,
+    recursion = true
+  ): Promise<boolean> {
+    const rules = rule.split('|').filter(Boolean)
+    for (const index in rules) {
+      const r = rules[index]
+      const [op, action, warp] = r.matchAll(CheckRules.GRAMMAR)
+        .next()
+        .value.slice(1) as string[]
+      switch (op) {
+        case CheckRules.OP_OPTIONAL:
+          if (typeof value === 'undefined') {
+            return true
           }
-        }
+          break
+        case CheckRules.OP_NULL:
+          if (value === null) {
+            return true
+          }
+          break
+        case CheckRules.OP_BOOLEAN:
+          if (typeof value === 'boolean') {
+            return true
+          }
+          break
+        case CheckRules.OP_INT:
+          if (!await this.checkInt(value, action)) {
+            return false
+          }
+          break
+        case CheckRules.OP_FLOAT:
+          if (!await this.checkFloat(value, action)) {
+            return false
+          }
+          break
+        case CheckRules.OP_STRING:
+          if (!await this.checkString(value, action, parseInt(warp))) {
+            return false
+          }
+          break
+        case CheckRules.OP_ARRAY:
+          if (!recursion) {
+            return true
+          }
+          if (!await this.checkArray(value, action, parseInt(warp))) {
+            return false
+          }
+          for (const item of value as TypeBase[]) {
+            if (!await this.process(rule, item, false)) {
+              return false
+            }
+          }
+          break
       }
     }
-    return 0
+    return true
   }
 
-  protected static async process (
-    alias: CheckRuleAlias,
-    rule: CheckRuleBase,
-    value: BaseType | BaseType[]
-  ): Promise<number> {
-    if (Array.isArray(value)) {
-
-    } else {
-      const reg = new RegExp(CheckRules.GRAMMAR)
-      const [_, type, action, warp] = rule.matchAll(reg).next().value
-      switch (type) {
-        case CheckRules.IS_IN_ARRAY:
-          return 0
-      }
+  static async checkInt (
+    value: TypeBase,
+    action?: string
+  ): Promise<boolean> {
+    if (!(typeof value === 'number' && parseInt(value.toString()) === value)) {
+      return false
     }
-    return 0
+    switch (action) {
+      case '>=0':
+        return value >= 0
+      case '>0':
+        return value > 0
+      default:
+        return true
+    }
+  }
+
+  static async checkFloat (
+    value: TypeBase,
+    action?: string
+  ): Promise<boolean> {
+    if (!(typeof value === 'number' && parseFloat(value.toString()) === value)) {
+      return false
+    }
+    switch (action) {
+      case '>=0':
+        return value >= 0
+      default:
+        return true
+    }
+  }
+
+  static async checkString (
+    value: TypeBase,
+    action?: string,
+    warp?: number
+  ): Promise<boolean> {
+    if (typeof value !== 'string') {
+      return false
+    }
+    switch (action) {
+      case '64':
+        return /^[\w+=]*$/.test(value)
+      case 'json':
+        try {
+          JSON.parse(value)
+          return true
+        } catch {
+          return false
+        }
+      case 'md5':
+        return /^[a-z0-9]{16}|[a-z0-9]{32}$/.test(value)
+      case 'd':
+        return /^\d{1,4}-\d{1,2}-\d{1,2}$/.test(value)
+      case 'dt':
+        return /^\d{1,4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}:\d{1,2}$/.test(value)
+      case 'len':
+        return !!warp && value.length === CheckRules.getBuffedData(warp)
+      case 'regex':
+        try {
+          return !!warp && new RegExp(CheckRules.getBuffedData(warp) as string)
+            .test(value)
+        } catch {
+          return false
+        }
+      default:
+        return true
+    }
+  }
+
+  static async checkArray (
+    value: TypeBase,
+    action?: string,
+    warp?: number
+  ): Promise<boolean> {
+    if (!Array.isArray(value)) {
+      return false
+    }
+    switch (action) {
+      case 'len':
+        try {
+          return !!warp && value.length === CheckRules.getBuffedData(warp)
+        } catch {
+          return false
+        }
+      default:
+        return true
+    }
   }
 }

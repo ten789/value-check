@@ -5,18 +5,20 @@ export class CheckRules {
   static readonly GRAMMAR = /^#(o|m|b|i|f|s|a|O)(\*.+)?(,\d+)?$/
   static readonly OP_OPTIONAL = 'o'
   static readonly OP_METHOD = 'm'
+  static readonly OP_NULL = 'n'
   static readonly OP_BOOLEAN = 'b'
   static readonly OP_INT = 'i'
   static readonly OP_FLOAT = 'f'
   static readonly OP_STRING = 's'
   static readonly OP_ARRAY = 'a'
-  static readonly OP_OBJECT = 'O'
 
   static readonly IS_OPTIONAL = `|#${CheckRules.OP_OPTIONAL}|`
 
   static readonly IS_IN_ARRAY = `#${CheckRules.OP_METHOD}*inArr,$`
 
   static readonly IS_IN_OBJECT_KEY = `${CheckRules.OP_METHOD}*inObjKey,$`
+
+  static readonly IS_NULL = `|${CheckRules.OP_NULL}|`
 
   static readonly IS_BOOLEAN = `|#${CheckRules.OP_BOOLEAN}|`
 
@@ -33,22 +35,23 @@ export class CheckRules {
   static readonly IS_STRING_MD5 = `|#${CheckRules.OP_STRING}*md5|`
   static readonly IS_STRING_DATE = `|#${CheckRules.OP_STRING}*d|`
   static readonly IS_STRING_DATETIME = `|#${CheckRules.OP_STRING}*dt|`
-  protected static readonly IS_STRING_SPECIFIED_LEN = `|#${CheckRules.OP_STRING}*len,$|`
+  protected static readonly IS_STRING_LENGTH = `|#${CheckRules.OP_STRING}*len,$|`
   protected static readonly IS_STRING_MATCH_REGEX = `|#${CheckRules.OP_STRING}*regex,$|`
 
   static readonly IS_ARRAY = `|#${CheckRules.OP_ARRAY}|`
   protected static readonly IS_ARRAY_SUBSET = `|#${CheckRules.OP_ARRAY}*sub,$|`
   protected static readonly IS_ARRAY_CONTAINS_ALL = `|#${CheckRules.OP_ARRAY}*cont,$|`
-  protected static readonly IS_ARRAY_LENGTH = `|#${CheckRules.OP_ARRAY}*length,$|`
+  protected static readonly IS_ARRAY_LENGTH = `|#${CheckRules.OP_ARRAY}*len,$|`
 
-  static readonly IS_OBJECT = `|#${CheckRules.OP_OBJECT}|`
-  protected static readonly IS_OBJECT_KEY_SUBSET = `|#${CheckRules.OP_OBJECT}*sub,$|`
-  protected static readonly IS_OBJECT_KEY_CONTAINS_ALL = `|#${CheckRules.OP_OBJECT}*cont,$|`
-
-  protected static buffedData: unknown[] = []
+  // 占位 方便 index 快速非空判断
+  protected static buffedData: unknown[] = [null]
   protected static saveBuffedData (data: unknown): number {
     this.buffedData.push(data)
     return this.buffedData.length
+  }
+
+  static getBuffedData (index: number): unknown {
+    return this.buffedData[index]
   }
 
   static wrap (type: string, data: unknown): string {
