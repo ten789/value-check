@@ -260,4 +260,3 @@ Check.setGlobalRules(extRules);
 exports.Check = Check;
 exports.CheckRules = CheckRules;
 exports.parseCheck = parseCheck;
-//# sourceMappingURL=value-check.cjs.js.map
