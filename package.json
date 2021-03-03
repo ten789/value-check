@@ -5,5 +5,11 @@
   "author": "tanzheng",
   "main": "index.js",
   "module": "dist/value-check.esm-bundler.js",
-  "types": "dist/value-check.d.ts"
+  "types": "dist/value-check.d.ts",
+  "buildOptions": {
+    "formats": [
+      "esm-bundler",
+      "cjs"
+    ]
+  }
 }
