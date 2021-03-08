@@ -254,3 +254,4 @@ const extRules = {
 Check.setGlobalRules(extRules);
 
 export { Check, CheckRules, parseCheck };
+//# sourceMappingURL=value-check.esm-bundler.js.map
