@@ -1,2 +1,2 @@
 'use strict'
-module.exports = require('./dist/service.cjs')
+module.exports = require('./dist/value-check.cjs')
