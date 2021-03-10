@@ -199,13 +199,7 @@ class Check {
             case '64':
                 return /^[\w+=]*$/.test(value);
             case 'json':
-                try {
-                    JSON.parse(value);
-                    return true;
-                }
-                catch {
-                    return false;
-                }
+                return !!JSON.parse(value);
             case 'md5':
                 return /^[a-z0-9]{16}|[a-z0-9]{32}$/.test(value);
             case 'd':
@@ -215,13 +209,8 @@ class Check {
             case 'len':
                 return !!warp && value.length === CheckRules.getBuffedData(warp);
             case 'regex':
-                try {
-                    return !!warp && new RegExp(CheckRules.getBuffedData(warp))
-                        .test(value);
-                }
-                catch {
-                    return false;
-                }
+                return !!warp && new RegExp(CheckRules.getBuffedData(warp))
+                    .test(value);
             default:
                 return true;
         }
@@ -232,12 +221,7 @@ class Check {
         }
         switch (action) {
             case 'len':
-                try {
-                    return !!warp && value.length === CheckRules.getBuffedData(warp);
-                }
-                catch {
-                    return false;
-                }
+                return !!warp && value.length === CheckRules.getBuffedData(warp);
             default:
                 return true;
         }
