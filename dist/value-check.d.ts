@@ -1,40 +1,22 @@
 
 export declare class Check {
     private static globalRules;
-    static setGlobalRules(rules: CheckRuleAlias): void;
-    protected rules: Map<string, CheckRule>;
+    static setGlobalRules(rules: ICheckRuleAlias): void;
+    protected rules: Map<string, ICheckRule>;
     constructor();
-    setRule(name: string, rule: CheckRule): void;
-    check(data: CheckData[]): Promise<CheckResult>;
-    static process(rule: CheckRuleBase, value: TypeBase, recursion?: boolean): Promise<boolean>;
-    static checkInt(value: TypeBase, action?: string): Promise<boolean>;
-    static checkFloat(value: TypeBase, action?: string): Promise<boolean>;
-    static checkString(value: TypeBase, action?: string, warp?: number): Promise<boolean>;
-    static checkArray(value: TypeBase, action?: string, warp?: number): Promise<boolean>;
+    setRule(name: string, rule: ICheckRule): void;
+    check(data: CheckData[]): Promise<ICheckResult>;
+    static process(rule: ICheckRuleBase, value: ITypeBase, recursion?: boolean): Promise<boolean>;
+    static checkInt(value: ITypeBase, action?: string): Promise<boolean>;
+    static checkFloat(value: ITypeBase, action?: string): Promise<boolean>;
+    static checkString(value: ITypeBase, action?: string, warp?: number): Promise<boolean>;
+    static checkArray(value: ITypeBase, action?: string, warp?: number): Promise<boolean>;
 }
 
 export declare type CheckData = {
-    rule: CheckRuleAliasName | CheckRule;
-    value: TypeBase | TypeObject;
+    rule: ICheckRuleAliasName | ICheckRule;
+    value: ITypeBase | ITypeObject;
 };
-
-export declare type CheckResult = CheckResultBase | CheckResultObject;
-
-export declare type CheckResultBase = Record<string, boolean>;
-
-export declare type CheckResultObject = Record<string, Record<string, boolean>>;
-
-export declare type CheckRule = CheckRuleBase | CheckRuleObject;
-
-export declare type CheckRuleAlias = Record<CheckRuleAliasName, CheckRule>;
-
-export declare type CheckRuleAliasName = string;
-
-export declare type CheckRuleBase = string;
-
-export declare type CheckRuleBaseType = string | number | null;
-
-export declare type CheckRuleObject = Record<string, CheckRuleBase>;
 
 export declare class CheckRules {
     static readonly GRAMMAR: RegExp;
@@ -72,14 +54,32 @@ export declare class CheckRules {
     protected static saveBuffedData(data: unknown): number;
     static getBuffedData(index: number): unknown;
     static wrap(type: string, data: unknown): string;
-    static inEnum(e: unknown[] | Record<string, CheckRuleBaseType> | Record<number, CheckRuleBaseType>): string;
+    static inEnum(e: unknown[] | Record<string, ICheckRuleBaseType> | Record<number, ICheckRuleBaseType>): string;
     static stringPregMatch(e: RegExp): string;
 }
 
-export declare const parseCheck: (result: CheckResult) => boolean;
+export declare type ICheckResult = ICheckResultBase | ICheckResultObject;
 
-declare type TypeBase = string | number | null | [];
+export declare type ICheckResultBase = Record<string, boolean>;
 
-declare type TypeObject = Record<string, TypeBase>;
+export declare type ICheckResultObject = Record<string, Record<string, boolean>>;
+
+export declare type ICheckRule = ICheckRuleBase | ICheckRuleObject;
+
+export declare type ICheckRuleAlias = Record<ICheckRuleAliasName, ICheckRule>;
+
+export declare type ICheckRuleAliasName = string;
+
+export declare type ICheckRuleBase = string;
+
+export declare type ICheckRuleBaseType = string | number | null;
+
+export declare type ICheckRuleObject = Record<string, ICheckRuleBase>;
+
+declare type ITypeBase = string | number | null | [];
+
+declare type ITypeObject = Record<string, ITypeBase>;
+
+export declare const parseCheck: (result: ICheckResult) => boolean;
 
 export { }

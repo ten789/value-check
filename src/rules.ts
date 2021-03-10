@@ -1,5 +1,5 @@
 
-export type CheckRuleBaseType = string | number | null
+export type ICheckRuleBaseType = string | number | null
 
 export class CheckRules {
   static readonly GRAMMAR = /^#(o|m|b|i|f|s|a|O)(\*.+)?(,\d+)?$/
@@ -60,7 +60,7 @@ export class CheckRules {
   }
 
   static inEnum (
-    e: unknown[] | Record<string, CheckRuleBaseType> | Record<number, CheckRuleBaseType>
+    e: unknown[] | Record<string, ICheckRuleBaseType> | Record<number, ICheckRuleBaseType>
   ): string {
     const w = Array.isArray(e) ? e : Object.keys(e).map(k => (e as any)[k])
     return this.wrap(this.IS_IN_ARRAY, w)

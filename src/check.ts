@@ -1,30 +1,30 @@
 import { CheckRules } from './rules'
 
-type TypeBase = string | number | null | []
-type TypeObject = Record<string, TypeBase>
+type ITypeBase = string | number | null | []
+type ITypeObject = Record<string, ITypeBase>
 
 // 单行能表示的规则
-export type CheckRuleBase = string
+export type ICheckRuleBase = string
 // Object类型的规则
-export type CheckRuleObject = Record<string, CheckRuleBase>
-export type CheckRule = CheckRuleBase | CheckRuleObject
+export type ICheckRuleObject = Record<string, ICheckRuleBase>
+export type ICheckRule = ICheckRuleBase | ICheckRuleObject
 
-export type CheckRuleAliasName = string
-export type CheckRuleAlias = Record<CheckRuleAliasName, CheckRule>
+export type ICheckRuleAliasName = string
+export type ICheckRuleAlias = Record<ICheckRuleAliasName, ICheckRule>
 
 export type CheckData = {
-  rule: CheckRuleAliasName | CheckRule,
-  value: TypeBase | TypeObject
+  rule: ICheckRuleAliasName | ICheckRule,
+  value: ITypeBase | ITypeObject
 }
 
-export type CheckResultBase = Record<string, boolean>
-export type CheckResultObject = Record<string, Record<string, boolean>>
-export type CheckResult = CheckResultBase | CheckResultObject
+export type ICheckResultBase = Record<string, boolean>
+export type ICheckResultObject = Record<string, Record<string, boolean>>
+export type ICheckResult = ICheckResultBase | ICheckResultObject
 
-export const parseCheck = function (result: CheckResult): boolean {
+export const parseCheck = function (result: ICheckResult): boolean {
   for (const key of Object.keys(result)) {
     if (typeof result[key] === 'object') {
-      if (!parseCheck(result[key] as CheckResult)) {
+      if (!parseCheck(result[key] as ICheckResult)) {
         return false
       }
     } else {
@@ -37,14 +37,14 @@ export const parseCheck = function (result: CheckResult): boolean {
 }
 
 export class Check {
-  private static globalRules = new Map<string, CheckRule>()
-  static setGlobalRules (rules: CheckRuleAlias): void {
+  private static globalRules = new Map<string, ICheckRule>()
+  static setGlobalRules (rules: ICheckRuleAlias): void {
     for (const key of Object.keys(rules)) {
       this.globalRules.set(key, rules[key])
     }
   }
 
-  protected rules = new Map<string, CheckRule>()
+  protected rules = new Map<string, ICheckRule>()
 
   constructor () {
     Check.globalRules.forEach((rule, name) => {
@@ -52,12 +52,12 @@ export class Check {
     })
   }
 
-  setRule (name: string, rule: CheckRule): void {
+  setRule (name: string, rule: ICheckRule): void {
     this.rules.set(name, rule)
   }
 
-  async check (data: CheckData[]): Promise<CheckResult> {
-    const ret: CheckResult = {}
+  async check (data: CheckData[]): Promise<ICheckResult> {
+    const ret: ICheckResult = {}
     let objectIndex = 0
     for (const item of data) {
       if (typeof item.value === 'string' ||
@@ -88,8 +88,8 @@ export class Check {
   }
 
   static async process (
-    rule: CheckRuleBase,
-    value: TypeBase,
+    rule: ICheckRuleBase,
+    value: ITypeBase,
     recursion = true
   ): Promise<boolean> {
     const rules = rule.split('|').filter(Boolean)
@@ -136,7 +136,7 @@ export class Check {
           if (!await this.checkArray(value, action, parseInt(warp))) {
             return false
           }
-          for (const item of value as TypeBase[]) {
+          for (const item of value as ITypeBase[]) {
             if (!await this.process(rule, item, false)) {
               return false
             }
@@ -148,7 +148,7 @@ export class Check {
   }
 
   static async checkInt (
-    value: TypeBase,
+    value: ITypeBase,
     action?: string
   ): Promise<boolean> {
     if (!(typeof value === 'number' && parseInt(value.toString()) === value)) {
@@ -165,7 +165,7 @@ export class Check {
   }
 
   static async checkFloat (
-    value: TypeBase,
+    value: ITypeBase,
     action?: string
   ): Promise<boolean> {
     if (!(typeof value === 'number' && parseFloat(value.toString()) === value)) {
@@ -180,7 +180,7 @@ export class Check {
   }
 
   static async checkString (
-    value: TypeBase,
+    value: ITypeBase,
     action?: string,
     warp?: number
   ): Promise<boolean> {
@@ -218,7 +218,7 @@ export class Check {
   }
 
   static async checkArray (
-    value: TypeBase,
+    value: ITypeBase,
     action?: string,
     warp?: number
   ): Promise<boolean> {

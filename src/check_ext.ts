@@ -1,7 +1,7 @@
-import { Check, CheckRuleAlias } from './check'
+import { Check, ICheckRuleAlias } from './check'
 import { CheckRules } from './rules'
 
-export const extRules: CheckRuleAlias = {
+export const extRules: ICheckRuleAlias = {
   username: CheckRules.stringPregMatch(/^[a-zA-Z0-9u4E00-u9FA5][a-zA-Z0-9u4E00-u9FA5\-_]{3,31}$/),
   password: CheckRules.stringPregMatch(/^[a-zA-Z0-9\-`~!@#%$^&*()_+=[\]{};':",.<>]{4,64}$/),
   mobile: CheckRules.stringPregMatch(/^1[3456789]\d{11}$/),
