@@ -1,6 +1,6 @@
 import { CheckRules } from './rules'
 
-type ITypeBase = string | number | null | boolean | []
+type ITypeBase = string | number | null | boolean | undefined | []
 type ITypeObject = Record<string, ITypeBase>
 
 // 单行能表示的规则
@@ -63,11 +63,12 @@ export class Check {
       if (typeof item.value === 'string' ||
         typeof item.value === 'number' ||
         typeof item.value === 'boolean' ||
+        typeof item.value === 'undefined' ||
         item.value === null ||
         Array.isArray(item.value)
       ) {
         if (typeof item.rule === 'string') {
-          ret[item.rule] = await Check.process(item.rule, item.value)
+          ret[item.rule] = await Check.process(item.rule, item.value as ITypeBase)
         } else {
           throw new Error('Check: Rule and Value type error.')
         }
@@ -94,44 +95,35 @@ export class Check {
     recursion = true
   ): Promise<boolean> {
     const rules = rule.split('|').filter(Boolean)
-    for (const index in rules) {
-      const r = rules[index]
-      const [_all, op, action, warp] = r.matchAll(CheckRules.GRAMMAR)
+    const regExp = new RegExp(CheckRules.GRAMMAR)
+
+    // eslint-disable-next-line no-unreachable-loop
+    for (const r of rules) {
+      const [_n, op, action, warp] = r.matchAll(regExp)
         .next()
         .value as string[]
       switch (op) {
         case CheckRules.OP_OPTIONAL:
-          return typeof value === 'undefined'
+          if (typeof value === 'undefined') {
+            return true
+          }
+          break
         case CheckRules.OP_NULL:
           return value === null
         case CheckRules.OP_BOOLEAN:
-          return typeof value === 'boolean'
+          return value === true || value === false
         case CheckRules.OP_INT:
           if (!await this.checkInt(value, action)) {
             return false
           }
           break
         case CheckRules.OP_FLOAT:
-          if (!await this.checkFloat(value, action)) {
-            return false
-          }
-          break
+          return await this.checkFloat(value, action)
         case CheckRules.OP_STRING:
-          if (!await this.checkString(value, action, parseInt(warp))) {
-            return false
-          }
-          break
+          return await this.checkString(value, action, parseInt(warp))
         case CheckRules.OP_ARRAY:
-          if (!recursion) {
-            return true
-          }
           if (!await this.checkArray(value, action, parseInt(warp))) {
             return false
-          }
-          for (const item of value as ITypeBase[]) {
-            if (!await this.process(rule, item, false)) {
-              return false
-            }
           }
           break
       }

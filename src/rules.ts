@@ -2,7 +2,7 @@
 export type ICheckRuleBaseType = string | number | null
 
 export class CheckRules {
-  static readonly GRAMMAR = /^#(o|m|b|i|f|s|a|O)(\*.+)?(,\d+)?$/
+  static readonly GRAMMAR = /^#(o|m|b|i|f|s|a|O|n)(\*.+)?(,\d+)?$/g
   static readonly OP_OPTIONAL = 'o'
   static readonly OP_METHOD = 'm'
   static readonly OP_NULL = 'n'
@@ -14,11 +14,11 @@ export class CheckRules {
 
   static readonly IS_OPTIONAL = `|#${CheckRules.OP_OPTIONAL}|`
 
-  static readonly IS_IN_ARRAY = `#${CheckRules.OP_METHOD}*inArr,$`
+  static readonly IS_IN_ARRAY = `|#${CheckRules.OP_METHOD}*inArr,$|`
 
-  static readonly IS_IN_OBJECT_KEY = `${CheckRules.OP_METHOD}*inObjKey,$`
+  static readonly IS_IN_OBJECT_KEY = `|#${CheckRules.OP_METHOD}*inObjKey,$|`
 
-  static readonly IS_NULL = `|${CheckRules.OP_NULL}|`
+  static readonly IS_NULL = `|#${CheckRules.OP_NULL}|`
 
   static readonly IS_BOOLEAN = `|#${CheckRules.OP_BOOLEAN}|`
 
