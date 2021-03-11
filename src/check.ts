@@ -1,6 +1,6 @@
 import { CheckRules } from './rules'
 
-type ITypeBase = string | number | null | []
+type ITypeBase = string | number | null | boolean | []
 type ITypeObject = Record<string, ITypeBase>
 
 // 单行能表示的规则
@@ -62,6 +62,7 @@ export class Check {
     for (const item of data) {
       if (typeof item.value === 'string' ||
         typeof item.value === 'number' ||
+        typeof item.value === 'boolean' ||
         item.value === null ||
         Array.isArray(item.value)
       ) {
@@ -95,25 +96,16 @@ export class Check {
     const rules = rule.split('|').filter(Boolean)
     for (const index in rules) {
       const r = rules[index]
-      const [op, action, warp] = r.matchAll(CheckRules.GRAMMAR)
+      const [_all, op, action, warp] = r.matchAll(CheckRules.GRAMMAR)
         .next()
-        .value.slice(1) as string[]
+        .value as string[]
       switch (op) {
         case CheckRules.OP_OPTIONAL:
-          if (typeof value === 'undefined') {
-            return true
-          }
-          break
+          return typeof value === 'undefined'
         case CheckRules.OP_NULL:
-          if (value === null) {
-            return true
-          }
-          break
+          return value === null
         case CheckRules.OP_BOOLEAN:
-          if (typeof value === 'boolean') {
-            return true
-          }
-          break
+          return typeof value === 'boolean'
         case CheckRules.OP_INT:
           if (!await this.checkInt(value, action)) {
             return false
