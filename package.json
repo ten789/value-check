@@ -3,10 +3,13 @@
   "version": "0.1.0",
   "license": "MIT",
   "author": "tanzheng",
-  "main": "./dist/value-check.umd.js",
-  "module": "dist/value-check.es.js",
+  "main": "./dist/value-check.cjs.js",
+  "module": "dist/value-check.esm-bundler.js",
   "types": "dist/value-check.d.ts",
   "buildOptions": {
-    "type": "lib"
+    "formats": [
+      "esm-bundler",
+      "cjs"
+    ]
   }
 }
