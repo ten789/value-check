@@ -422,6 +422,6 @@ describe('value-check method', () => {
         value: 'abc'
       }
     ]
-    expect(await check.check(data)).toStrictEqual([true])
+    expect(await check.check(data)).toStrictEqual([true, true, true])
   })
 })
