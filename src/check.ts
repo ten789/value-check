@@ -1,40 +1,23 @@
 import { CheckRules } from './rules'
 
-type ITypeBase = string | number | null | boolean | undefined | []
-type ITypeObject = Record<string, ITypeBase>
+type ITypeBase = string | number | null | boolean | undefined
+type ITypeArray = ITypeBase[]
+type ITypeObject = Record<string, ITypeBase | ITypeArray>
+export type ICheckType = ITypeBase | ITypeArray | ITypeObject
 
 // 单行能表示的规则
-export type ICheckRuleBase = string
-// Object类型的规则
-export type ICheckRuleObject = Record<string, ICheckRuleBase>
-export type ICheckRule = ICheckRuleBase | ICheckRuleObject
+export type ICheckRule = string
 
 export type ICheckRuleAliasName = string
 export type ICheckRuleAlias = Record<ICheckRuleAliasName, ICheckRule>
 
 export type CheckData = {
   rule: ICheckRuleAliasName | ICheckRule,
-  value: ITypeBase | ITypeObject
+  value: ICheckType
 }
 
-export type ICheckResultBase = Record<string, boolean>
-export type ICheckResultObject = Record<string, Record<string, boolean>>
-export type ICheckResult = ICheckResultBase | ICheckResultObject
-
-export const parseCheck = function (result: ICheckResult): boolean {
-  for (const key of Object.keys(result)) {
-    if (typeof result[key] === 'object') {
-      if (!parseCheck(result[key] as ICheckResult)) {
-        return false
-      }
-    } else {
-      if (!result[key]) {
-        return false
-      }
-    }
-  }
-  return true
-}
+export type ICheckResultBase = boolean
+export type ICheckResult = boolean[]
 
 export class Check {
   private static globalRules = new Map<string, ICheckRule>()
@@ -46,59 +29,31 @@ export class Check {
 
   protected rules = new Map<string, ICheckRule>()
 
-  constructor () {
-    Check.globalRules.forEach((rule, name) => {
-      this.rules.set(name, rule)
-    })
-  }
-
   setRule (name: string, rule: ICheckRule): void {
     this.rules.set(name, rule)
   }
 
   async check (data: CheckData[]): Promise<ICheckResult> {
-    const ret: ICheckResult = {}
-    let objectIndex = 0
+    const ret: ICheckResult = []
     for (const item of data) {
-      if (typeof item.value === 'string' ||
-        typeof item.value === 'number' ||
-        typeof item.value === 'boolean' ||
-        typeof item.value === 'undefined' ||
-        item.value === null ||
-        Array.isArray(item.value)
-      ) {
-        if (typeof item.rule === 'string') {
-          ret[item.rule] = await Check.process(item.rule, item.value as ITypeBase)
-        } else {
-          throw new Error('Check: Rule and Value type error.')
-        }
-      } else {
-        if (typeof item.rule === 'object' &&
-          typeof item.value === 'object' &&
-          Object.keys(item.value) === Object.keys(item.rule)
-        ) {
-          const tmp: Record<string, boolean> = {}
-          for (const name of Object.keys(item.value)) {
-            tmp[name] = await Check.process(item.rule[name], item.value[name])
-          }
-          ret[objectIndex.toString()] = tmp
-          objectIndex++
-        }
-      }
+      const r = await Check.process(item.rule, item.value as ITypeBase, data)
+      ret.push(r)
     }
     return ret
   }
 
   static async process (
-    rule: ICheckRuleBase,
-    value: ITypeBase,
-    recursion = true
-  ): Promise<boolean> {
+    rule: ICheckRule,
+    value: ICheckType,
+    checkData: CheckData[]
+  ): Promise<ICheckResultBase> {
     const rules = rule.split('|').filter(Boolean)
     const regExp = new RegExp(CheckRules.GRAMMAR)
 
+    let newRule: ICheckRule
     // eslint-disable-next-line no-unreachable-loop
-    for (const r of rules) {
+    for (let index = 0; index < rules.length; index++) {
+      const r = rules[index]
       const [_n, op, action, warp] = r.matchAll(regExp)
         .next()
         .value as string[]
@@ -122,17 +77,29 @@ export class Check {
         case CheckRules.OP_STRING:
           return await this.checkString(value, action, parseInt(warp))
         case CheckRules.OP_ARRAY:
-          if (!await this.checkArray(value, action, parseInt(warp))) {
+          if (!await this.checkArray(value, action, parseInt(warp)) ||
+            !Array.isArray(value)
+          ) {
             return false
           }
-          break
+          newRule = rules.slice(index + 1).join('|')
+          for (const v of value) {
+            if (!await this.process(newRule, v, checkData)) {
+              return false
+            }
+          }
+          return true
+        case CheckRules.OP_OBJECT:
+          if (!await this.checkObject(value, action, parseInt(warp), checkData)) {
+            return false
+          }
       }
     }
     return true
   }
 
   static async checkInt (
-    value: ITypeBase,
+    value: ICheckType,
     action?: string
   ): Promise<boolean> {
     if (!(typeof value === 'number' && parseInt(value.toString()) === value)) {
@@ -149,7 +116,7 @@ export class Check {
   }
 
   static async checkFloat (
-    value: ITypeBase,
+    value: ICheckType,
     action?: string
   ): Promise<boolean> {
     if (!(typeof value === 'number' && parseFloat(value.toString()) === value)) {
@@ -164,7 +131,7 @@ export class Check {
   }
 
   static async checkString (
-    value: ITypeBase,
+    value: ICheckType,
     action?: string,
     warp?: number
   ): Promise<boolean> {
@@ -175,9 +142,13 @@ export class Check {
       case '64':
         return /^[\w+=]*$/.test(value)
       case 'json':
-        return !!JSON.parse(value)
+        try {
+          return !!JSON.parse(value)
+        } catch {
+          return false
+        }
       case 'md5':
-        return /^[a-z0-9]{16}|[a-z0-9]{32}$/.test(value)
+        return (value.length === 32 || value.length === 16) && /^[a-zA-Z0-9]+$/.test(value)
       case 'd':
         return /^\d{1,4}-\d{1,2}-\d{1,2}$/.test(value)
       case 'dt':
@@ -193,7 +164,7 @@ export class Check {
   }
 
   static async checkArray (
-    value: ITypeBase,
+    value: ICheckType,
     action?: string,
     warp?: number
   ): Promise<boolean> {
@@ -203,8 +174,48 @@ export class Check {
     switch (action) {
       case 'len':
         return !!warp && value.length === CheckRules.getBuffedData(warp)
+      case 'subset':
+        if (warp) {
+          const data = CheckRules.getBuffedData(warp)
+          return Array.isArray(data) &&
+            value.filter(v => data.indexOf(v) > -1).length === value.length
+        } else {
+          return false
+        }
       default:
         return true
+    }
+  }
+
+  static async checkObject (
+    value: ICheckType,
+    action: string | undefined,
+    wrap: number | undefined,
+    checkData: CheckData[]
+  ): Promise<boolean> {
+    if (typeof value !== 'object' || Array.isArray(value) || value === null) {
+      return false
+    }
+    if (action === 'rule') {
+      if (!wrap) {
+        return false
+      }
+      const data = CheckRules.getBuffedData(wrap) as Record<string, ICheckRule>
+      if (typeof data !== 'object') {
+        return false
+      }
+      for (const key of Reflect.ownKeys(data)) {
+        if (!Reflect.has(value, key)) {
+          return false
+        }
+        const r = Reflect.get(data, key) as ICheckRule
+        if (!await this.process(r, Reflect.get(value, key), checkData)) {
+          return false
+        }
+      }
+      return true
+    } else {
+      return true
     }
   }
 }
