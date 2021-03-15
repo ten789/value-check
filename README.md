@@ -4,7 +4,7 @@
 
 ## 1.校验类型分类
 
-|            |                                                              |
+| 类型       | 内容                                                         |
 | ---------- | ------------------------------------------------------------ |
 | 基础类型   | IS_OPTIONAL<br>IS_NULL<br>IS_BOOLEAN<br>IS_INT<br>IS_FLOAT<br>IS_STRING<br>IS_ARRAY<br>IS_OBJECT |
 | 高级类型   | IS_INT_POSITIVE_0<br>IS_INT_ID<br>IS_FLOAT_POSITIVE<br>IS_STRING_BASE64<br>IS_STRING_JSON<br>IS_STRING_MD5<br>IS_STRING_DATE<br>IS_STRING_DATETIME<br>IS_STRING_LENGTH<br>IS_STRING_MATCH_REGEX<br>IS_IN_ARRAY<br>IS_ARRAY_SUBSET<br>IS_ARRAY_LENGTH<br>IS_OBJECT_RULE |
