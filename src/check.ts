@@ -27,15 +27,12 @@ export class Check {
     }
   }
 
-  protected rules = new Map<string, ICheckRule>()
-
-  setRule (name: string, rule: ICheckRule): void {
-    this.rules.set(name, rule)
-  }
-
   async check (data: CheckData[]): Promise<ICheckResult> {
     const ret: ICheckResult = []
     for (const item of data) {
+      if (Check.globalRules.has(item.rule)) {
+        item.rule = Check.globalRules.get(item.rule) as ICheckRule
+      }
       const r = await Check.process(item.rule, item.value as ITypeBase, data)
       ret.push(r)
     }
@@ -54,6 +51,10 @@ export class Check {
     // eslint-disable-next-line no-unreachable-loop
     for (let index = 0; index < rules.length; index++) {
       const r = rules[index]
+      const matched = r.matchAll(regExp).next()
+      if (!matched.value) {
+        return false
+      }
       const [_n, op, action, warp] = r.matchAll(regExp)
         .next()
         .value as string[]
