@@ -93,7 +93,7 @@ export class CheckRules {
 
   static dynamic (
     checkDataIndex: number,
-    rules: Record<string, ICheckRuleAliasName | ICheckRule>
+    rules: Record<string, Record<string, ICheckRule | ICheckRuleAliasName>>
   ): string {
     return this.wrap(this.IS_DYNAMIC, { checkDataIndex, rules })
   }
