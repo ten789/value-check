@@ -1,4 +1,6 @@
-import { ICheckType, ICheckRule, ICheckRuleAliasName } from './check'
+import { ICheckType, ICheckRule, ICheckRuleAliasName, Check } from './check'
+
+export type ICheckRulesFunc = (check: Check, value: any) => Promise<boolean>
 
 export class CheckRules {
   static readonly GRAMMAR = /^#([onbifsamO])\*?([\w<>=!]+)?,?(\d+)?$/g
@@ -11,6 +13,7 @@ export class CheckRules {
   static readonly OP_ARRAY = 'a'
   static readonly OP_METHOD = 'm'
   static readonly OP_OBJECT = 'O'
+  static readonly OP_FUNCTION = 'f'
 
   static readonly IS_OPTIONAL = `|#${CheckRules.OP_OPTIONAL}|`
 
@@ -42,9 +45,12 @@ export class CheckRules {
 
   protected static readonly IS_ARRAY_SUBSET = `|#${CheckRules.OP_ARRAY}*subset,$|`
   protected static readonly IS_ARRAY_LENGTH = `|#${CheckRules.OP_ARRAY}*len,$|`
+  protected static readonly IS_ARRAY_RULE = `|#${CheckRules.OP_ARRAY}*rule,$|`
 
   protected static readonly IS_OBJECT_RULE = `|#${CheckRules.OP_OBJECT}*rule,$|`
   protected static readonly IS_DYNAMIC = `|#${CheckRules.OP_METHOD}*dynamic,$|`
+
+  protected static readonly USE_FUNCTION = `|#${CheckRules.OP_FUNCTION}*any,$`
 
   // 占位 方便 index 快速非空判断
   protected static buffedData: unknown[] = [null]
@@ -85,6 +91,10 @@ export class CheckRules {
     return this.wrap(this.IS_ARRAY_SUBSET, arr)
   }
 
+  static arrayItem (rule: ICheckRule | ICheckRuleAliasName): string {
+    return this.wrap(this.IS_ARRAY_RULE, rule)
+  }
+
   static object (
     object: Record<string, ICheckRule | ICheckRuleAliasName>
   ): string {
@@ -96,5 +106,9 @@ export class CheckRules {
     rules: Record<string, Record<string, ICheckRule | ICheckRuleAliasName>>
   ): string {
     return this.wrap(this.IS_DYNAMIC, { checkDataIndex, rules })
+  }
+
+  static useFunc (func: ICheckRulesFunc): string {
+    return this.wrap(this.USE_FUNCTION, func)
   }
 }

@@ -78,7 +78,7 @@ export class Check {
         case CheckRules.OP_STRING:
           return await this.checkString(value, action, parseInt(warp))
         case CheckRules.OP_ARRAY:
-          if (!await this.checkArray(value, action, parseInt(warp)) ||
+          if (!await this.checkArray(value, action, parseInt(warp), checkData) ||
             !Array.isArray(value)
           ) {
             return false
@@ -166,8 +166,9 @@ export class Check {
 
   static async checkArray (
     value: ICheckType,
-    action?: string,
-    warp?: number
+    action: string,
+    warp: number,
+    checkData: CheckData[]
   ): Promise<boolean> {
     if (!Array.isArray(value)) {
       return false
@@ -180,6 +181,18 @@ export class Check {
           const data = CheckRules.getBuffedData(warp)
           return Array.isArray(data) &&
             value.filter(v => data.indexOf(v) > -1).length === value.length
+        } else {
+          return false
+        }
+      case 'rule':
+        if (warp) {
+          const r = CheckRules.getBuffedData(warp) as ICheckRule
+          for (const item of value) {
+            if (!await this.process(r, item, checkData)) {
+              return false
+            }
+          }
+          return true
         } else {
           return false
         }
