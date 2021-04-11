@@ -21,6 +21,7 @@ export type ICheckResult = boolean[]
 
 export class Check {
   private static globalRules = new Map<string, ICheckRule>()
+
   static setGlobalRules (rules: ICheckRuleAlias): void {
     for (const key of Object.keys(rules)) {
       this.globalRules.set(key, rules[key])
@@ -74,9 +75,15 @@ export class Check {
           }
           break
         case CheckRules.OP_FLOAT:
-          return await this.checkFloat(value, action)
+          if (!await this.checkFloat(value, action)) {
+            return false
+          }
+          break
         case CheckRules.OP_STRING:
-          return await this.checkString(value, action, parseInt(warp))
+          if (!await this.checkString(value, action, parseInt(warp))) {
+            return false
+          }
+          break
         case CheckRules.OP_ARRAY:
           if (!await this.checkArray(value, action, parseInt(warp), checkData) ||
             !Array.isArray(value)
@@ -89,11 +96,17 @@ export class Check {
               return false
             }
           }
-          return true
+          break
         case CheckRules.OP_OBJECT:
           if (!await this.checkObject(value, action, parseInt(warp), checkData)) {
             return false
           }
+          break
+        case CheckRules.OP_FUNCTION:
+          if (!await this.checkFunc(value, action, parseInt(warp))) {
+            return false
+          }
+          break
       }
     }
     return true
@@ -231,5 +244,17 @@ export class Check {
     } else {
       return true
     }
+  }
+
+  static async checkFunc (
+    value: ICheckType,
+    action: string | undefined,
+    warp: number | undefined
+  ): Promise<boolean> {
+    if (!warp) {
+      return false
+    }
+    const func = CheckRules.getBuffedData(warp) as Function
+    return func(this, value)
   }
 }
